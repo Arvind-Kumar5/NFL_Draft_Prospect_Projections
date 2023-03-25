@@ -10,9 +10,9 @@ for year in range(2010, 2022):
     url_year = url.format(year)
     data = requests.get(url_year)
 
-    with open("proBowl2010.html", "w+") as f:
+    with open("proBowl{}.html".format(year), "w+") as f:
         f.write(data.text)
-    with open("proBowl2010.html") as f:
+    with open("proBowl{}.html".format(year)) as f:
 
         html_page = f.read()
 
@@ -21,9 +21,9 @@ for year in range(2010, 2022):
     pro_bowlers = soup.find(id="pro_bowl")
     print(pro_bowlers)
 
-    #pro_bowlers = pd.read_html(str(pro_bowlers))[0]
+    pro_bowlers = pd.read_html(str(pro_bowlers))[0]
 
-    #dfs.append(pro_bowlers)
+    dfs.append(pro_bowlers)
 
     os.remove("proBowl{}.html".format(year))
 
