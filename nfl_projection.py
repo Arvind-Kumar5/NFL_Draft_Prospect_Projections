@@ -3,6 +3,7 @@ import csv
 import pandas as pd
 import os
 import sys
+
 # need new column names to differentiate passing and rushing yards
 def changeTrainColNames(df):
     cols = []
