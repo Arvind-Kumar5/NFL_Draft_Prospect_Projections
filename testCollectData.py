@@ -36,6 +36,7 @@ for year in range(2010, 2022):
 if rateLimit == False:
     #append all pro bowl years together into dataframe
     pro_bowl = pd.concat(dfs)
+    pro_bowl = pro_bowl.reset_index(drop=True) # needed so that each row has unique index
     #Drop all other positions except qb
     pro_bowl.drop(pro_bowl.loc[pro_bowl['Pos']!="QB"].index, inplace=True)
     #print(pro_bowl)

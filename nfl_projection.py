@@ -1,28 +1,82 @@
-#MAIN FILE
-import csv
 import pandas as pd
 import os
-import sys
+import requests
+from bs4 import BeautifulSoup
+import re
+
+probowlUrl = "https://www.pro-football-reference.com/years/{}/probowl.htm"
+probowlHtmlFile = "proBowl{}.html"
+probowlId = "pro_bowl" 
+
+collegeStatsUrl = "https://www.sports-reference.com/cfb/years/{}-passing.html"
+collegeStatsHtmlFile = "collegeStats{}.html"
+collegeStatsId = "div_passing"
+
+combineUrl = "https://www.pro-football-reference.com/draft/{}-combine.htm"
+combineHtmlFile = "combineStats{}.html"
+combineId = "div_combine" 
+
+def scrapeSite(url, htmlFileName, idName, startYear, endYear):
+    dfs = []
+    rateLimit = False
+
+    for year in range(startYear, endYear+1):
+        url_year = url.format(year)
+        data = requests.get(url_year)
+
+        with open(htmlFileName.format(year), "w+") as f:
+            f.write(data.text)
+        with open(htmlFileName.format(year)) as f:
+
+            html_page = f.read()
+
+        soup = BeautifulSoup(html_page, "html.parser")
+
+        try:
+            df = soup.find(id=idName)
+            df = pd.read_html(str(df))[0]
+            dfs.append(df)
+        except ValueError:
+            print("Rate Limit: Too many requests ve are blocked")
+            rateLimit = True
+
+        os.remove(htmlFileName.format(year))
+
+    return rateLimit, dfs 
+
+def getProbowl(rateLimit, dfs):
+    if rateLimit == False:
+        #append all pro bowl years together into dataframe
+        df = pd.concat(dfs)
+
+        df = df.reset_index(drop=True) # needed so that each row has unique index
+
+        # Drop all other positions except qb
+        df.drop(df.loc[df['Pos']!="QB"].index, inplace=True)
+        # print("only qb df: ", df)
+
+        #Clean data names and add to dict
+        regex = re.compile('[^a-zA-Z\s]')
+        playerNamesExctract = df.Player.tolist()
+        playerNames = {}
+        for name in playerNamesExctract:
+            playerNames[regex.sub('', name)] = True
+
+        return playerNames
+    return None
+
 # need new column names to differentiate passing and rushing yards
-def changeTrainColNames(df):
-    cols = []
-    for colName in df.iloc[0,:]:
-        cols.append(colName)
+def changeTrainColNames(college_stats_df):
+    new_cols = []
 
-    passingStatsIndicies = range(5,14)
-    rushingStatsIndicies = range(14,18)
-
-    newCols = []
-    for i in range(len(cols)):
-        if i in passingStatsIndicies:
-            newCols.append("Passing_"+str(cols[i]))
-        elif i in rushingStatsIndicies:
-            newCols.append("Rushing_"+str(cols[i])) 
+    for i in range(len(college_stats_df.columns.values)):
+        col = college_stats_df.columns.values[i]
+        if i in range(0,5):
+            new_cols.append(col[len(col)-1])
         else:
-            newCols.append(cols[i])
+            new_cols.append('_'.join(col))
 
-    df.columns = newCols
-    return newCols
+    college_stats_df.columns = new_cols
 
 # some names have "*" next to them which needs to be removed
 def removeStarFromName(df):
@@ -33,31 +87,52 @@ def removeStarFromName(df):
             df['Player'].values[index] = newName
         index += 1
 
-def getTrainData(path):
-    dirs = os.listdir(path)
-    dfs = []
-    print("dirs: ", dirs)
-    for file in dirs:
-        if ".csv" in str(file):
-            try:
-                df = pd.read_csv(path+"/"+file) # read specfic csv file
-                df = df.drop("-additional", axis='columns') # drop unused column
-                changeTrainColNames(df) # specfic col names needed such as "Passing_Yds" and "Rushing_yds"
-                df = df.drop(0) # need to drop the column header row since we made new column header
-                removeStarFromName(df) # some names have a "*" next to them, need to remove the "*"
+def getCollegeStatsDf(rateLimit, dfs):
+    if rateLimit == False:
+        df = pd.concat(dfs)
+        df = df.reset_index(drop=True) # needed so that each row has unique index
+        changeTrainColNames(df)
+        removeStarFromName(df)
+        return df
+    return None
 
-                # drop unused column
-                df = df.drop("School", axis='columns') 
-                df = df.drop("Conf", axis='columns')
-                dfs.append(df)
-            except:
-                print(str(file) + " : CSV FILE ERROR")
-                continue
-           
-    bigDf = pd.concat(dfs)
-    return bigDf
+def getCombineDf(rateLimit, dfs):
+    if rateLimit == False:
+        df = pd.concat(dfs)
+        df = df.reset_index(drop=True) # needed so that each row has unique index
+        df.drop(index=df.loc[df['Pos']!='QB'].index, inplace=True)
+        df = df.drop(columns=['School', 'College', 'Drafted (tm/rnd/yr)'])
+        return df
+    return None
 
-# 2010 data is 102 rows × 16 columns
+# for training 2008 to 2017
+trainRateLimit, trainDfsProbowl = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2008, 2017)
+# for validation 2018 to 2019
+valRateLimit, valDfsProbowl = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2018, 2019)
+# for testing 2020 to 2021
+testRateLimit, testDfsProbowl =  scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2020, 2021)
 
-df = getTrainData("train_data")
-print(len(df))
+trainProbowl = getProbowl(trainRateLimit, trainDfsProbowl)
+valProbowl= getProbowl(valRateLimit, valDfsProbowl)
+testProbowl = getProbowl(testRateLimit, testDfsProbowl)
+
+
+# for training 2008 to 2017
+trainRateLimit, trainDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2008, 2017) 
+# for validation 2018 to 2019
+valRateLimit, valDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2018, 2019) 
+# for testing 2020 to 2021
+testRateLimit, testDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2020, 2021) 
+
+trainDf = getCollegeStatsDf(trainRateLimit, trainDfsStats)
+valDf = getCollegeStatsDf(valRateLimit, valDfsStats)
+testDf = getCollegeStatsDf(testRateLimit, testDfsStats)
+
+
+# for training combine 2009 to 2018
+trainLimit, trainDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,2009,2018)
+# for validation combine 2019 to 2020
+## TODO
+# for testing combine 2021 to 2022
+## TODO
+combineTrainDf = getCombineDf(trainLimit, trainDfsCombine)
