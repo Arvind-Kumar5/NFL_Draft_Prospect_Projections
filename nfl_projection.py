@@ -3,6 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import re
+from tqdm import tqdm
 
 import time
 import sys
@@ -45,16 +46,18 @@ def scrapeSite(url, htmlFileName, idName, startYear, endYear):
             df = soup.find(id=idName)
             df = pd.read_html(str(df))[0]
             dfs.append(df)
+            #print("request gord. ve are not blocked")
+            if i == 4:
+                print("")
+                i = 1
+
+            print("Collecting Data Vate (ve are not blocked)", dots(i), end='\r')
+            i = i + 1
         except ValueError:
             print("Rate Limit: Too many requests ve are blocked")
             rateLimit = True
 
-        if i == 4:
-            print("Collecting")
-            i = 1
-
-        print("Collecting Data Vate", dots(i), end='\r')
-        i = i + 1
+        
         
         os.remove(htmlFileName.format(year))
 
@@ -132,6 +135,10 @@ trainProbowl = getProbowl(trainRateLimit, trainDfsProbowl)
 #valProbowl= getProbowl(valRateLimit, valDfsProbowl)
 #testProbowl = getProbowl(testRateLimit, testDfsProbowl)
 
+print("Pro-Bowlers: \n")
+print(trainProbowl)
+print(len(trainProbowl))
+
 
 # for training 2008 to 2017
 trainRateLimit, trainDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2008, 2017) 
@@ -156,20 +163,50 @@ combineTrainDf = getCombineDf(trainLimit, trainDfsCombine)
 # add score column with everything preset to 0
 trainDf['Score'] = None
 score = 0
-    
-# fill score column
-for x, row in  trainDf.iterrows():
+
+for i in tqdm(range(10)):
+
+    # fill score column
+    for x, row in  trainDf.iterrows():
+        if row['Player'] == 'Player':
+            continue
+        try:
+            score = ((((int(row["Passing_Cmp"])/int(row["Passing_Att"]))*100)) + (int(row["Passing_Yds"])/25) + (int(row["Passing_TD"])*4) + (int(row["Rushing_Yds"])/10) + (float(row["Passing_Rate"])/10.0) + (int(row["Rushing_TD"])*6)) - (int(row["Passing_Int"])*2)
+            row['Score'] = score
+
+        except ValueError:
+            print("error on this row: \n", row)
+            break
+
+    time.sleep(0.5)
+
+duplicateDf = trainDf[trainDf.Player.duplicated(keep=False)].sort_values("Player")
+
+duplicates = {}
+
+for x, row in duplicateDf.iterrows():
+
     if row['Player'] == 'Player':
         continue
-    try:
-        score = ((((int(row["Passing_Cmp"])/int(row["Passing_Att"]))*100)) + (int(row["Passing_Yds"])/25) + (int(row["Passing_TD"])*4) + (int(row["Rushing_Yds"])/10) + (float(row["Passing_Rate"])/10.0) + (int(row["Rushing_TD"])*6)) - (int(row["Passing_Int"])*2)
-        row['Score'] = score
 
-    except ValueError:
-        print("error on this row: \n", row)
-        break
+    elif row['Player'] not in duplicates:
+        duplicates[row['Player']] = dict(row)
 
-print("Train Df: \n", trainDf)
-print("-------")
-print(trainDf[trainDf.duplicated('Courses')])
+    else:
+
+        if row['Score'] > duplicates[row['Player']]['Score']:
+
+            duplicates[row['Player']] = dict(row)
+
+print(duplicates["Derek Carr"])
+bestScoreDuplicates = []
+for player in duplicates:
+    trainDf.drop(trainDf.loc[trainDf['Player']==player].index, inplace=True)
+    bestScoreDuplicates.append(pd.DataFrame([duplicates[player]]))
+    # trainDf = trainDf.append(duplicates[player], ignore_index = True)
+
+trainDf = pd.concat(bestScoreDuplicates, ignore_index = True)
+print("No duplicates \n")
+print(trainDf)
+
 time.sleep(60)
