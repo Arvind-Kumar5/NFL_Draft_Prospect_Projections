@@ -56,6 +56,9 @@ def updateDfNoDuplicates(trainDf, duplicates):
 
     return trainDf
 
+
+print("\nVe are never getting blocked again")
+
 # read from the csv files and create a df
 trainDf = pd.read_csv('TrainData/trainDf.csv') #, index_col=0) -> ignore for now
 combineTrainDf = pd.read_csv('TrainData/combineTrainDf.csv') #, index_col=0) -> ignore for now
@@ -67,8 +70,8 @@ print("----------- trainDf:")
 print(trainDf)
 print()
 
-combineTrainDf.drop(combineTrainDf.columns[combineTrainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
 # needed for some formatting issues when reading csv
+combineTrainDf.drop(combineTrainDf.columns[combineTrainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
 print("----------- combineTrainDf:")
 print(combineTrainDf)
 print()
