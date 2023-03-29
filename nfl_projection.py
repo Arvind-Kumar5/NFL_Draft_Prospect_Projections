@@ -131,8 +131,8 @@ testDf = getCollegeStatsDf(testRateLimit, testDfsStats)
 
 # for training combine 2009 to 2018
 trainLimit, trainDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,2009,2018)
-# for training combine 2019 to 2020
+# for validation combine 2019 to 2020
 ## TODO
-# for training combine 2021 to 2022
+# for testing combine 2021 to 2022
 ## TODO
 combineTrainDf = getCombineDf(trainLimit, trainDfsCombine)
