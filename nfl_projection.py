@@ -159,7 +159,7 @@ score = 0
     
 # fill score column
 for x, row in  trainDf.iterrows():
-    if x == 0:
+    if row['Player'] == 'Player':
         continue
     try:
         score = ((((int(row["Passing_Cmp"])/int(row["Passing_Att"]))*100)) + (int(row["Passing_Yds"])/25) + (int(row["Passing_TD"])*4) + (int(row["Rushing_Yds"])/10) + (float(row["Passing_Rate"])/10.0) + (int(row["Rushing_TD"])*6)) - (int(row["Passing_Int"])*2)
@@ -168,6 +168,8 @@ for x, row in  trainDf.iterrows():
     except ValueError:
         print("error on this row: \n", row)
         break
-# print(score)
+
 print("Train Df: \n", trainDf)
+print("-------")
+print(trainDf[trainDf.duplicated('Courses')])
 time.sleep(60)
