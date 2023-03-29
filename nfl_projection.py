@@ -4,6 +4,9 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+import time
+import sys
+
 probowlUrl = "https://www.pro-football-reference.com/years/{}/probowl.htm"
 probowlHtmlFile = "proBowl{}.html"
 probowlId = "pro_bowl" 
@@ -16,10 +19,16 @@ combineUrl = "https://www.pro-football-reference.com/draft/{}-combine.htm"
 combineHtmlFile = "combineStats{}.html"
 combineId = "div_combine" 
 
+def dots(i):
+    return "."*i
+
+def printCollectingData():
+    pass
+
 def scrapeSite(url, htmlFileName, idName, startYear, endYear):
     dfs = []
     rateLimit = False
-
+    i = 1
     for year in range(startYear, endYear+1):
         url_year = url.format(year)
         data = requests.get(url_year)
@@ -40,6 +49,13 @@ def scrapeSite(url, htmlFileName, idName, startYear, endYear):
             print("Rate Limit: Too many requests ve are blocked")
             rateLimit = True
 
+        if i == 4:
+            print("Collecting")
+            i = 1
+
+        print("Collecting Data Vate", dots(i), end='\r')
+        i = i + 1
+        
         os.remove(htmlFileName.format(year))
 
     return rateLimit, dfs 
@@ -108,25 +124,25 @@ def getCombineDf(rateLimit, dfs):
 # for training 2008 to 2017
 trainRateLimit, trainDfsProbowl = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2008, 2017)
 # for validation 2018 to 2019
-valRateLimit, valDfsProbowl = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2018, 2019)
+#valRateLimit, valDfsProbowl = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2018, 2019)
 # for testing 2020 to 2021
-testRateLimit, testDfsProbowl =  scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2020, 2021)
+#testRateLimit, testDfsProbowl =  scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2020, 2021)
 
 trainProbowl = getProbowl(trainRateLimit, trainDfsProbowl)
-valProbowl= getProbowl(valRateLimit, valDfsProbowl)
-testProbowl = getProbowl(testRateLimit, testDfsProbowl)
+#valProbowl= getProbowl(valRateLimit, valDfsProbowl)
+#testProbowl = getProbowl(testRateLimit, testDfsProbowl)
 
 
 # for training 2008 to 2017
 trainRateLimit, trainDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2008, 2017) 
 # for validation 2018 to 2019
-valRateLimit, valDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2018, 2019) 
+#valRateLimit, valDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2018, 2019) 
 # for testing 2020 to 2021
-testRateLimit, testDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2020, 2021) 
+#testRateLimit, testDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2020, 2021) 
 
 trainDf = getCollegeStatsDf(trainRateLimit, trainDfsStats)
-valDf = getCollegeStatsDf(valRateLimit, valDfsStats)
-testDf = getCollegeStatsDf(testRateLimit, testDfsStats)
+#valDf = getCollegeStatsDf(valRateLimit, valDfsStats)
+#testDf = getCollegeStatsDf(testRateLimit, testDfsStats)
 
 
 # for training combine 2009 to 2018
@@ -136,3 +152,22 @@ trainLimit, trainDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,20
 # for testing combine 2021 to 2022
 ## TODO
 combineTrainDf = getCombineDf(trainLimit, trainDfsCombine)
+
+# add score column with everything preset to 0
+trainDf['Score'] = None
+score = 0
+    
+# fill score column
+for x, row in  trainDf.iterrows():
+    if x == 0:
+        continue
+    try:
+        score = ((((int(row["Passing_Cmp"])/int(row["Passing_Att"]))*100)) + (int(row["Passing_Yds"])/25) + (int(row["Passing_TD"])*4) + (int(row["Rushing_Yds"])/10) + (float(row["Passing_Rate"])/10.0) + (int(row["Rushing_TD"])*6)) - (int(row["Passing_Int"])*2)
+        row['Score'] = score
+
+    except ValueError:
+        print("error on this row: \n", row)
+        break
+# print(score)
+print("Train Df: \n", trainDf)
+time.sleep(60)
