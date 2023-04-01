@@ -16,24 +16,22 @@ def getScore(row):
             + (int(row["Rushing_TD"])*6)) - (int(row["Passing_Int"])*2)
 
 def fillDfWithScores(trainDf):
-    for i in tqdm(range(10)):
-        # fill score column
-        for x, row in  trainDf.iterrows():
-            if row['Player'] == 'Player':
-                continue
-            try:
-                row['Score'] = getScore(row)
+    for x, row in  tqdm(trainDf.iterrows(), total=trainDf.shape[0], desc="Calculating scores: "):
+        if row['Player'] == 'Player':
+            continue
+        try:
+            row['Score'] = getScore(row)
 
-            except ValueError:
-                print("error on this row: \n", row)
-                break
+        except ValueError:
+            print("error on this row: \n", row)
+            break
 
-        time.sleep(0.5)
+        #time.sleep(0.0000001)
 
 def getDuplicates(duplicateDf):
     duplicates = {}
 
-    for x, row in duplicateDf.iterrows():
+    for x, row in tqdm(duplicateDf.iterrows(), total=duplicateDf.shape[0], desc="Finding duplicates: "):
         if row['Player'] == 'Player':
             continue
         elif row['Player'] not in duplicates:
@@ -41,6 +39,8 @@ def getDuplicates(duplicateDf):
         else:
             if row['Score'] > duplicates[row['Player']]['Score']:
                 duplicates[row['Player']] = dict(row)
+
+        #time.sleep(0.0000001)
     
     return duplicates
 
@@ -55,6 +55,50 @@ def updateDfNoDuplicates(trainDf, duplicates):
     trainDf = pd.concat(bestScoreDuplicates, ignore_index = True)
 
     return trainDf
+
+def addCombineData(trainDf, combineTrainDf):
+
+    eligiblePlayers = len(dict(combineTrainDf)['Player'])
+    combineParticipants = {}
+    for i in range(eligiblePlayers):
+
+        combineParticipants[dict(combineTrainDf)['Player'][i]] = dict(combineTrainDf.loc[i])
+
+    combineParticipantsDf = pd.DataFrame()
+    allParticipants = []
+
+    for x, row in trainDf.iterrows():
+
+        if row['Player'] in combineParticipants:
+            allParticipants.append(pd.DataFrame([dict(row)]))
+
+    combineParticipantsDf = pd.concat(allParticipants, ignore_index=True)
+
+    #Add combine columns
+    currList = list(trainDf)
+
+    for colName in list(combineTrainDf.columns):
+        
+        if colName not in currList:
+            combineParticipantsDf[colName] = None
+
+    for x, row in combineParticipantsDf.iterrows():
+        #Add Ht from combine participants dict to dataframe
+        #print("Adding rows: ", row)
+        combineParticipantsDf.loc[x, ['Pos']] = [combineParticipants[row['Player']]['Pos']]
+        combineParticipantsDf.loc[x, ['Ht']] = [combineParticipants[row['Player']]['Ht']]
+        combineParticipantsDf.loc[x, ['Wt']] = [combineParticipants[row['Player']]['Wt']]
+        combineParticipantsDf.loc[x, ['40yd']] = [combineParticipants[row['Player']]['40yd']]
+        combineParticipantsDf.loc[x, ['Vertical']] = [combineParticipants[row['Player']]['Vertical']]
+        combineParticipantsDf.loc[x, ['Bench']] = [combineParticipants[row['Player']]['Bench']]
+        combineParticipantsDf.loc[x, ['Broad Jump']] = [combineParticipants[row['Player']]['Broad Jump']]
+        combineParticipantsDf.loc[x, ['3Cone']] = [combineParticipants[row['Player']]['3Cone']]
+        combineParticipantsDf.loc[x, ['Shuttle']] = [combineParticipants[row['Player']]['Shuttle']]
+
+    return combineParticipantsDf
+
+
+
 
 
 print("\nVe are never getting blocked again")
@@ -104,3 +148,20 @@ trainDf = updateDfNoDuplicates(trainDf, duplicates)
 print("----------- No duplicates train df")
 print(trainDf)
 print()
+
+# update traindf with combine data and get back players who attended the combine 
+#TODO: May need to figure out whether we want to only use players who attended combine or not
+
+combineParticipantsDf = addCombineData(trainDf, combineTrainDf)
+print("----------- CombineDF df")
+print(combineParticipantsDf)
+print()
+
+
+    
+
+    
+
+
+
+
