@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from tqdm import tqdm
+import math
 import pickle
 
 import time
@@ -64,15 +65,15 @@ def addCombineData(trainDf, combineTrainDf):
 
         combineParticipants[dict(combineTrainDf)['Player'][i]] = dict(combineTrainDf.loc[i])
 
-    combineParticipantsDf = pd.DataFrame()
-    allParticipants = []
+    #combineParticipantsDf = pd.DataFrame()
+    #allParticipants = []
 
-    for x, row in trainDf.iterrows():
+    # for x, row in trainDf.iterrows():
 
-        if row['Player'] in combineParticipants:
-            allParticipants.append(pd.DataFrame([dict(row)]))
+    #     if row['Player'] in combineParticipants:
+    #         allParticipants.append(pd.DataFrame([dict(row)]))
 
-    combineParticipantsDf = pd.concat(allParticipants, ignore_index=True)
+    #combineParticipantsDf = pd.concat(allParticipants, ignore_index=True)
 
     #Add combine columns
     currList = list(trainDf)
@@ -80,22 +81,39 @@ def addCombineData(trainDf, combineTrainDf):
     for colName in list(combineTrainDf.columns):
         
         if colName not in currList:
-            combineParticipantsDf[colName] = None
+            #combineParticipantsDf[colName] = None
 
-    for x, row in combineParticipantsDf.iterrows():
+            #If we want all players use this and comment that ^
+            trainDf[colName] = None
+
+    for x, row in trainDf.iterrows():
         #Add Ht from combine participants dict to dataframe
         #print("Adding rows: ", row)
-        combineParticipantsDf.loc[x, ['Pos']] = [combineParticipants[row['Player']]['Pos']]
-        combineParticipantsDf.loc[x, ['Ht']] = [combineParticipants[row['Player']]['Ht']]
-        combineParticipantsDf.loc[x, ['Wt']] = [combineParticipants[row['Player']]['Wt']]
-        combineParticipantsDf.loc[x, ['40yd']] = [combineParticipants[row['Player']]['40yd']]
-        combineParticipantsDf.loc[x, ['Vertical']] = [combineParticipants[row['Player']]['Vertical']]
-        combineParticipantsDf.loc[x, ['Bench']] = [combineParticipants[row['Player']]['Bench']]
-        combineParticipantsDf.loc[x, ['Broad Jump']] = [combineParticipants[row['Player']]['Broad Jump']]
-        combineParticipantsDf.loc[x, ['3Cone']] = [combineParticipants[row['Player']]['3Cone']]
-        combineParticipantsDf.loc[x, ['Shuttle']] = [combineParticipants[row['Player']]['Shuttle']]
 
-    return combineParticipantsDf
+        try:
+            trainDf.loc[x, ['Pos']] = [combineParticipants[row['Player']]['Pos']]
+            trainDf.loc[x, ['Ht']] = [combineParticipants[row['Player']]['Ht']]
+            trainDf.loc[x, ['Wt']] = [combineParticipants[row['Player']]['Wt']]
+            trainDf.loc[x, ['40yd']] = [combineParticipants[row['Player']]['40yd']]
+            trainDf.loc[x, ['Vertical']] = [combineParticipants[row['Player']]['Vertical']]
+            trainDf.loc[x, ['Bench']] = [combineParticipants[row['Player']]['Bench']]
+            trainDf.loc[x, ['Broad Jump']] = [combineParticipants[row['Player']]['Broad Jump']]
+            trainDf.loc[x, ['3Cone']] = [combineParticipants[row['Player']]['3Cone']]
+            trainDf.loc[x, ['Shuttle']] = [combineParticipants[row['Player']]['Shuttle']]
+
+        except:
+
+            trainDf.loc[x, ['Pos']] = float('nan')
+            trainDf.loc[x, ['Ht']] = float('nan')
+            trainDf.loc[x, ['Wt']] = float('nan')
+            trainDf.loc[x, ['40yd']] = float('nan')
+            trainDf.loc[x, ['Vertical']] = float('nan')
+            trainDf.loc[x, ['Bench']] = float('nan')
+            trainDf.loc[x, ['Broad Jump']] = float('nan')
+            trainDf.loc[x, ['3Cone']] = float('nan')
+            trainDf.loc[x, ['Shuttle']] = float('nan')
+
+    return trainDf
 
 
 
@@ -126,9 +144,6 @@ with open('probowlers.pkl', 'rb') as fp:
 
 if not probowlers:
     print("ve are in a bit of trouble")
-print("----------- probowlers: ", probowlers)
-print("----------- probowlers len: ", len(probowlers))
-print()
 
 # add score column with everything preset to None
 trainDf['Score'] = None
@@ -153,7 +168,7 @@ print()
 #TODO: May need to figure out whether we want to only use players who attended combine or not
 
 combineParticipantsDf = addCombineData(trainDf, combineTrainDf)
-print("----------- CombineDF df")
+print("----------- trainDf combined with combineTraindf")
 print(combineParticipantsDf)
 print()
 
