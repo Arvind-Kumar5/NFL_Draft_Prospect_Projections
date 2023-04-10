@@ -122,7 +122,7 @@ def addCombineData(trainDf, combineTrainDf):
     print("")
     return trainDf
 
-def getOnlyDraftedQbs(trainDf):
+def getOnlyDraftedQbs(trainDf, draftedQbs):
     indiciesToDrop = {}
     for index,row in tqdm(trainDf.iterrows(), desc="Getting drafted qbs: "):
         if row['Player'] not in draftedQbs.keys():
@@ -151,109 +151,112 @@ def addLabels(trainDf, probowlers):
     return trainDf
 
 
+def heightToInches(trainDf):
+    for x,row in trainDf.iterrows():
+        if str(row['Ht']).lower() == "nan":
+            continue
+        heightArr = str(row['Ht']).split("-")
+        feet = float(heightArr[0])
+        inches = float(heightArr[1])
+        trainDf.loc[x, ['Ht']] = (feet*12)+inches
+    
+    return trainDf
 
-print("\nVe are never getting blocked again")
+def main():
+    print("\nVe are never getting blocked again")
 
-# read from the csv files and create a df
-trainDf = pd.read_csv('TrainData/trainDf.csv') #, index_col=0) -> ignore for now
-combineTrainDf = pd.read_csv('TrainData/combineTrainDf.csv') #, index_col=0) -> ignore for now
+    # read from the csv files and create a df
+    trainDf = pd.read_csv('TrainData/trainDf.csv') #, index_col=0) -> ignore for now
+    combineTrainDf = pd.read_csv('TrainData/combineTrainDf.csv') #, index_col=0) -> ignore for now
 
-print()
-# needed for some formatting issues when reading csv
-trainDf.drop(trainDf.columns[trainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
-print("----------- trainDf:")
-print(trainDf)
-print(trainDf['Player'].values)
-x = "Matthew Stafford" in trainDf['Player'].values
-print("Matthew Stafford in? ", x)
-print()
+    print()
+    # needed for some formatting issues when reading csv
+    trainDf.drop(trainDf.columns[trainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+    print("----------- trainDf:")
+    print(trainDf)
+    print(trainDf['Player'].values)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
 
-# needed for some formatting issues when reading csv
-combineTrainDf.drop(combineTrainDf.columns[combineTrainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
-print("----------- combineTrainDf:")
-print(combineTrainDf)
-x = "Matthew Stafford" in trainDf['Player'].values
-print("Matthew Stafford in? ", x)
-print()
-print()
+    # needed for some formatting issues when reading csv
+    combineTrainDf.drop(combineTrainDf.columns[combineTrainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+    print("----------- combineTrainDf:")
+    print(combineTrainDf)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
+    print()
 
-probowlers = {}
-with open('probowlers.pkl', 'rb') as fp:
-    probowlers = pickle.load(fp)
+    probowlers = {}
+    with open('probowlers.pkl', 'rb') as fp:
+        probowlers = pickle.load(fp)
 
-if not probowlers:
-    print("ve are in a bit of trouble")
+    if not probowlers:
+        print("ve are in a bit of trouble")
 
-# add score column with everything preset to None
-trainDf['Score'] = None
+    # add score column with everything preset to None
+    trainDf['Score'] = None
 
-# calculate the score for each row and add it to the row
-fillDfWithScores(trainDf)
+    # calculate the score for each row and add it to the row
+    fillDfWithScores(trainDf)
 
-# get the duplicate players (players with multiple college season stats)
-# duplicateDf = trainDf[trainDf.Player.duplicated(keep=False)].sort_values("Player")
-# duplicates = getDuplicates(duplicateDf)
-duplicates = getDuplicates(trainDf)
-print("----------- len(duplicates): ", len(duplicates))
+    # get the duplicate players (players with multiple college season stats)
+    # duplicateDf = trainDf[trainDf.Player.duplicated(keep=False)].sort_values("Player")
+    # duplicates = getDuplicates(duplicateDf)
+    duplicates = getDuplicates(trainDf)
+    print("----------- len(duplicates): ", len(duplicates))
+    x = "Matthew Stafford" in duplicates.keys()
+    print("Matthew Stafford in duplicates? ", x)
+    print()
 
-# x = "Matthew Stafford" in duplicateDf['Player'].values
-# print("Matthew Stafford in duplicateDf? ", x)
+    # create trainDf with no duplicates 
+    trainDf = updateDfNoDuplicates(trainDf, duplicates)
+    print("----------- No duplicates train df")
+    print(trainDf)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
+    print()
 
-x = "Matthew Stafford" in duplicates.keys()
-print("Matthew Stafford in duplicates? ", x)
-print()
+    # update traindf with combine data and get back players who attended the combine 
+    #TODO: May need to figure out whether we want to only use players who attended combine or not
+    combineParticipantsDf = addCombineData(trainDf, combineTrainDf)
+    trainDf = combineParticipantsDf
+    print("----------- trainDf combined with combineTraindf")
+    print(trainDf)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
+    print()
 
-# create trainDf with no duplicates 
-trainDf = updateDfNoDuplicates(trainDf, duplicates)
-print("----------- No duplicates train df")
-print(trainDf)
-x = "Matthew Stafford" in trainDf['Player'].values
-print("Matthew Stafford in? ", x)
-print()
-print()
+    draftedQbs = {}
+    with open('draftedQbs.pkl', 'rb') as fp:
+        draftedQbs = pickle.load(fp)
 
-# update traindf with combine data and get back players who attended the combine 
-#TODO: May need to figure out whether we want to only use players who attended combine or not
-combineParticipantsDf = addCombineData(trainDf, combineTrainDf)
-trainDf = combineParticipantsDf
-print("----------- trainDf combined with combineTraindf")
-print(trainDf)
-x = "Matthew Stafford" in trainDf['Player'].values
-print("Matthew Stafford in? ", x)
-print()
-print()
-
-draftedQbs = {}
-with open('draftedQbs.pkl', 'rb') as fp:
-    draftedQbs = pickle.load(fp)
-
-if not draftedQbs:
-    print("ve are in a bit of trouble")
-
-# print("----------- drafted Qbs")
-# print("len(draftedQbs): ", len(draftedQbs))
-# print()
-
-# allPlayersBefore = trainDf['Player'].values
-
-# counter = 1
-# for player in draftedQbs.keys():
-#     if player not in allPlayersBefore:
-#         print(str(counter) + ") " + str(player))
-#         counter += 1
-
-trainDf = getOnlyDraftedQbs(trainDf)
-print("----------- trainDf")
-print(trainDf)
-x = "Matthew Stafford" in trainDf['Player'].values
-print("Matthew Stafford in? ", x)
-print()
-
-#Add probowl label
-trainDf['ProBowl'] = None
+    if not draftedQbs:
+        print("ve are in a bit of trouble")
 
 
-trainDf = addLabels(trainDf, probowlers)
+    trainDf = getOnlyDraftedQbs(trainDf, draftedQbs)
+    print("----------- trainDf")
+    print(trainDf)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
+    
+    trainDf = heightToInches(trainDf)
+
+    #Add probowl label
+    trainDf['ProBowl'] = None
+    trainDf = addLabels(trainDf, probowlers)
+    print("----------- final train df")
+    print(trainDf)
+    x = "Matthew Stafford" in trainDf['Player'].values
+    print("Matthew Stafford in? ", x)
+    print()
+
+    return trainDf
 
 
     
