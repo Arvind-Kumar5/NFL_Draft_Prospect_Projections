@@ -27,6 +27,8 @@ def fillDfWithScores(trainDf):
             print("error on this row: \n", row)
             break
 
+    print("")
+
         #time.sleep(0.0000001)
 
 def getDuplicates(duplicateDf):
@@ -42,18 +44,20 @@ def getDuplicates(duplicateDf):
                 duplicates[row['Player']] = dict(row)
 
         #time.sleep(0.0000001)
-    
+    print("")
     return duplicates
 
 # update df such that only duplicates with the best scores are used 
 def updateDfNoDuplicates(trainDf, duplicates):
     bestScoreDuplicates = []
 
-    for player in duplicates:
+    for player in tqdm(duplicates, desc="Finding best duplicates: "):
         trainDf.drop(trainDf.loc[trainDf['Player']==player].index, inplace=True)
         bestScoreDuplicates.append(pd.DataFrame([duplicates[player]]))
 
     trainDf = pd.concat(bestScoreDuplicates, ignore_index = True)
+
+    print("")
 
     return trainDf
 
@@ -61,9 +65,11 @@ def addCombineData(trainDf, combineTrainDf):
 
     eligiblePlayers = len(dict(combineTrainDf)['Player'])
     combineParticipants = {}
-    for i in range(eligiblePlayers):
+    for i in tqdm(range(eligiblePlayers), desc="Finding combine attendees: "):
 
         combineParticipants[dict(combineTrainDf)['Player'][i]] = dict(combineTrainDf.loc[i])
+
+    print("")
 
     #combineParticipantsDf = pd.DataFrame()
     #allParticipants = []
@@ -86,7 +92,7 @@ def addCombineData(trainDf, combineTrainDf):
             #If we want all players use this and comment that ^
             trainDf[colName] = None
 
-    for x, row in trainDf.iterrows():
+    for x, row in tqdm(trainDf.iterrows(), desc="Adding combine stats: "):
         #Add Ht from combine participants dict to dataframe
         #print("Adding rows: ", row)
 
@@ -113,11 +119,12 @@ def addCombineData(trainDf, combineTrainDf):
             trainDf.loc[x, ['3Cone']] = float('nan')
             trainDf.loc[x, ['Shuttle']] = float('nan')
 
+    print("")
     return trainDf
 
 def getOnlyDraftedQbs(trainDf):
     indiciesToDrop = {}
-    for index,row in trainDf.iterrows():
+    for index,row in tqdm(trainDf.iterrows(), desc="Getting drafted qbs: "):
         if row['Player'] not in draftedQbs.keys():
             indiciesToDrop[index] = index
 
@@ -125,8 +132,23 @@ def getOnlyDraftedQbs(trainDf):
     trainDf = trainDf.reset_index()
     trainDf.drop(columns=['index'], inplace=True) 
 
+    print("")
     return trainDf
 
+def addLabels(trainDf, probowlers):
+
+    for x, row in tqdm(trainDf.iterrows(), desc="Adding labels: "):
+
+        if row['Player'] in probowlers:
+
+            trainDf.loc[x, ['ProBowl']] = 1
+
+        else:
+
+            trainDf.loc[x, ['ProBowl']] = 0
+
+    print("")
+    return trainDf
 
 
 
@@ -226,6 +248,15 @@ print(trainDf)
 x = "Matthew Stafford" in trainDf['Player'].values
 print("Matthew Stafford in? ", x)
 print()
+
+#Add probowl label
+trainDf['ProBowl'] = None
+
+
+trainDf = addLabels(trainDf, probowlers)
+
+
+    
 
 
     
