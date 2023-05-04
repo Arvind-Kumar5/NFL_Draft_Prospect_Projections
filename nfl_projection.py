@@ -24,10 +24,10 @@ def fillDfWithScores(trainDf):
             row['Score'] = getScore(row)
 
         except ValueError:
-            print("error on this row: \n", row)
+            # print("error on this row: \n", row)
             break
 
-    print("")
+    # print("")
 
         #time.sleep(0.0000001)
 
@@ -44,7 +44,7 @@ def getDuplicates(duplicateDf):
                 duplicates[row['Player']] = dict(row)
 
         #time.sleep(0.0000001)
-    print("")
+    # print("")
     return duplicates
 
 # update df such that only duplicates with the best scores are used 
@@ -57,7 +57,7 @@ def updateDfNoDuplicates(trainDf, duplicates):
 
     trainDf = pd.concat(bestScoreDuplicates, ignore_index = True)
 
-    print("")
+    # print("")
 
     return trainDf
 
@@ -69,7 +69,7 @@ def addCombineData(trainDf, combineTrainDf):
 
         combineParticipants[dict(combineTrainDf)['Player'][i]] = dict(combineTrainDf.loc[i])
 
-    print("")
+    # print("")
 
     #combineParticipantsDf = pd.DataFrame()
     #allParticipants = []
@@ -94,7 +94,7 @@ def addCombineData(trainDf, combineTrainDf):
 
     for x, row in tqdm(trainDf.iterrows(), desc="Adding combine stats: "):
         #Add Ht from combine participants dict to dataframe
-        #print("Adding rows: ", row)
+        ## print("Adding rows: ", row)
 
         try:
             trainDf.loc[x, ['Pos']] = [combineParticipants[row['Player']]['Pos']]
@@ -119,7 +119,7 @@ def addCombineData(trainDf, combineTrainDf):
             trainDf.loc[x, ['3Cone']] = float('nan')
             trainDf.loc[x, ['Shuttle']] = float('nan')
 
-    print("")
+    # print("")
     return trainDf
 
 def getOnlyDraftedQbs(trainDf, draftedQbs):
@@ -132,7 +132,7 @@ def getOnlyDraftedQbs(trainDf, draftedQbs):
     trainDf = trainDf.reset_index()
     trainDf.drop(columns=['index'], inplace=True) 
 
-    print("")
+    # print("")
     return trainDf
 
 def addLabels(trainDf, probowlers):
@@ -147,7 +147,7 @@ def addLabels(trainDf, probowlers):
 
             trainDf.loc[x, ['ProBowl']] = 0
 
-    print("")
+    # print("")
     return trainDf
 
 
@@ -162,31 +162,24 @@ def heightToInches(trainDf):
     
     return trainDf
 
-def main():
-    print("\nVe are never getting blocked again")
+def main(dfPath, combinePath):
+    # print("\nVe are never getting blocked again")
 
     # read from the csv files and create a df
-    trainDf = pd.read_csv('TrainData/trainDf.csv') #, index_col=0) -> ignore for now
-    combineTrainDf = pd.read_csv('TrainData/combineTrainDf.csv') #, index_col=0) -> ignore for now
+    trainDf = pd.read_csv(dfPath) # 'TrainData/trainDf.csv') #, index_col=0) -> ignore for now
+    combineTrainDf = pd.read_csv(combinePath) # 'TrainData/combineTrainDf.csv') #, index_col=0) -> ignore for now
 
-    print()
+    # print()
     # needed for some formatting issues when reading csv
     trainDf.drop(trainDf.columns[trainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
-    print("----------- trainDf:")
-    print(trainDf)
-    print(trainDf['Player'].values)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
+    # print("----------- trainDf:")
+    # print(trainDf)
+    # print(trainDf['Player'].values)
 
     # needed for some formatting issues when reading csv
     combineTrainDf.drop(combineTrainDf.columns[combineTrainDf.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
-    print("----------- combineTrainDf:")
-    print(combineTrainDf)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
-    print()
+    # print("----------- combineTrainDf:")
+    # print(combineTrainDf)
 
     probowlers = {}
     with open('probowlers.pkl', 'rb') as fp:
@@ -205,30 +198,19 @@ def main():
     # duplicateDf = trainDf[trainDf.Player.duplicated(keep=False)].sort_values("Player")
     # duplicates = getDuplicates(duplicateDf)
     duplicates = getDuplicates(trainDf)
-    print("----------- len(duplicates): ", len(duplicates))
-    x = "Matthew Stafford" in duplicates.keys()
-    print("Matthew Stafford in duplicates? ", x)
-    print()
+    # print("----------- len(duplicates): ", len(duplicates))
 
     # create trainDf with no duplicates 
     trainDf = updateDfNoDuplicates(trainDf, duplicates)
-    print("----------- No duplicates train df")
-    print(trainDf)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
-    print()
+    # print("----------- No duplicates train df")
+    # print(trainDf)
 
     # update traindf with combine data and get back players who attended the combine 
     #TODO: May need to figure out whether we want to only use players who attended combine or not
     combineParticipantsDf = addCombineData(trainDf, combineTrainDf)
     trainDf = combineParticipantsDf
-    print("----------- trainDf combined with combineTraindf")
-    print(trainDf)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
-    print()
+    # print("----------- trainDf combined with combineTraindf")
+    # print(trainDf)
 
     draftedQbs = {}
     with open('draftedQbs.pkl', 'rb') as fp:
@@ -239,22 +221,17 @@ def main():
 
 
     trainDf = getOnlyDraftedQbs(trainDf, draftedQbs)
-    print("----------- trainDf")
-    print(trainDf)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
+    # print("----------- trainDf")
+    # print(trainDf)
     
     trainDf = heightToInches(trainDf)
 
-    #Add probowl label
+    # Add probowl label
     trainDf['ProBowl'] = None
     trainDf = addLabels(trainDf, probowlers)
-    print("----------- final train df")
-    print(trainDf)
-    x = "Matthew Stafford" in trainDf['Player'].values
-    print("Matthew Stafford in? ", x)
-    print()
+    # print("----------- final train df")
+    # print(trainDf)
+    # print()
 
     return trainDf
 
