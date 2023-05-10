@@ -121,7 +121,7 @@ def getCombineDf(rateLimit, dfs):
     return None
 
 # for training 2008 to 2022
-rateLimit, probowlDfs = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 2008, 2022)
+rateLimit, probowlDfs = scrapeSite(probowlUrl, probowlHtmlFile, probowlId, 1980, 2022)
 probowl = getProbowl(rateLimit, probowlDfs)
 
 print("\n")
@@ -135,31 +135,23 @@ with open('probowlers.pkl', 'wb') as fp:
 print()
 
 # for training 2008 to 2017
-trainRateLimit, trainDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2008, 2017) 
-# for validation 2018 to 2019
-valRateLimit, valDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2018, 2019) 
+trainRateLimit, trainDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 1980, 2019) 
 # for testing 2020 to 2021
 testRateLimit, testDfsStats = scrapeSite(collegeStatsUrl, collegeStatsHtmlFile, collegeStatsId, 2020, 2021) 
 
 trainDf = getCollegeStatsDf(trainRateLimit, trainDfsStats)
-valDf = getCollegeStatsDf(valRateLimit, valDfsStats)
 testDf = getCollegeStatsDf(testRateLimit, testDfsStats)
 
 # for training combine 2009 to 2018
-trainLimit, trainDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,2009,2018)
-# for validation combine 2019 to 2020
-valLimit, valDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,2019,2020)
+trainLimit, trainDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,1981,2020)
 # for testing combine 2021 to 2022
 testLimit, testDfsCombine = scrapeSite(combineUrl,combineHtmlFile,combineId,2021,2022)
 
 combineTrainDf = getCombineDf(trainLimit, trainDfsCombine)
-combineValDf = getCombineDf(trainLimit, trainDfsCombine)
 combineTestDf = getCombineDf(trainLimit, trainDfsCombine)
 
 trainDf.to_csv('TrainData/trainDf.csv')
-valDf.to_csv('ValidationData/valDf.csv')
 testDf.to_csv('TestData/testDf.csv')
 
 combineTrainDf.to_csv('TrainData/combineTrainDf.csv')
-combineValDf.to_csv('ValidationData/combineValDf.csv')
 combineTestDf.to_csv('TestData/combineTestDf.csv')

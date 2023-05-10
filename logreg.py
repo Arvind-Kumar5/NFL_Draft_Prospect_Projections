@@ -70,7 +70,7 @@ print()
 epochs = 20000
 inputDim = 24 # 24 inputs --> 24 stats
 outputDim = 1 # Single binary output 
-learning_rate = 0.001 # can change later
+learning_rate = 0.01 # can change later
 
 model = LogisticRegression(inputDim,outputDim)
 lossFunction = torch.nn.BCELoss()
@@ -85,6 +85,11 @@ for epoch in tqdm(range(int(epochs)),desc='Training Epochs'):
     optimizer.zero_grad() # Setting our stored gradients equal to zero
     outputs = model(xTrain)
     outputs = torch.squeeze(outputs)
+    # print("\noutputs: ", outputs)
+    # print("outputs.shape: ", outputs.shape)
+    # print("yTrain: ", yTrain)
+    # print("yTrain.shape: ", yTrain.shape)
+    # break
     
     loss = lossFunction(outputs, yTrain) 
     
